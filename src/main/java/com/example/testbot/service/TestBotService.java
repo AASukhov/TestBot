@@ -1,7 +1,11 @@
 package com.example.testbot.service;
 
 import com.example.testbot.config.BotConfig;
+import com.example.testbot.model.User;
+import com.example.testbot.model.UserRepository;
+import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -17,12 +21,16 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Component
 public class TestBotService extends TelegramLongPollingBot {
+
+    @Autowired
+    private UserRepository repository;
 
     final BotConfig config;
 
@@ -59,6 +67,7 @@ public class TestBotService extends TelegramLongPollingBot {
             switch (messageTest) {
                 case "/start":
                         startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+                        registerUser(update.getMessage());
                         break;
                 case "/help":
                         sendMessage(chatId, "Sorry, that point will be made soon");
@@ -69,15 +78,51 @@ public class TestBotService extends TelegramLongPollingBot {
     }
 
     private void startCommandReceived(long chatId, String name){
-        String answer = "Hello, " + name + ", nice to meet you!";
+        String answerParsed = EmojiParser.parseToUnicode("Hello, " + name + ", nice to meet you!" + " :blush:");
+        //String answer = "Hello, " + name + ", nice to meet you!" + " :blush:";
         log.info("Replied to user " + name);
-        sendMessage(chatId, answer);
+        sendMessage(chatId, answerParsed);
+    }
+
+    private void registerUser(Message message) {
+        if(repository.findById(message.getChatId()).isEmpty()){
+            var chatId = message.getChatId();
+            var chat = message.getChat();
+
+            User user = new User();
+            user.setChatId(chatId);
+            user.setFirstName(chat.getFirstName());
+            user.setLastName(chat.getLastName());
+            user.setUserName(chat.getUserName());
+            user.setRegisteredAt(new Timestamp(System.currentTimeMillis()));
+
+            repository.save(user);
+            log.info("user saved: " + user);
+        }
     }
 
     private void sendMessage(long chatId, String textToSend) {
         SendMessage msg = new SendMessage();
         msg.setChatId(String.valueOf(chatId));
         msg.setText(textToSend);
+
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+        KeyboardRow row = new KeyboardRow();
+        row.add("Weather");
+        row.add("Get random joke");
+        keyboardRows.add(row);
+
+        row = new KeyboardRow();
+
+        row.add("register");
+        row.add("check my data");
+        row.add("delete my data");
+
+        keyboardRows.add(row);
+        keyboardMarkup.setKeyboard(keyboardRows);
+
+        msg.setReplyMarkup(keyboardMarkup);
 
         try{
             execute(msg);
