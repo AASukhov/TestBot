@@ -1,7 +1,5 @@
 package com.example.testbot.model;
 
-//import org.springframework.data.annotation.Id;
-
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.sql.Timestamp;
@@ -63,11 +61,11 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
-                "chatId=" + chatId +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", userName='" + userName + '\'' +
+        return "User {" +
+                "chatId=" + chatId + '\n' +
+                ", firstName='" + firstName + '\n' +
+                ", lastName='" + lastName + '\n' +
+                ", userName='" + userName + '\n' +
                 ", registeredAt=" + registeredAt +
                 '}';
     }

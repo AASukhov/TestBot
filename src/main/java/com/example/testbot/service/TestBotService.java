@@ -10,14 +10,11 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -70,7 +67,16 @@ public class TestBotService extends TelegramLongPollingBot {
                         registerUser(update.getMessage());
                         break;
                 case "/help":
-                        sendMessage(chatId, "Sorry, that point will be made soon");
+                        sendMessage(chatId, "This telegram bot is for demonstration \n " +
+                                "Use menu and keyboard for navigation");
+                        break;
+                case "/mydata":
+                        sendMessage(chatId, "Your data was saved when you have used '/start' command");
+                        checkUserInDatabase(update.getMessage());
+                        sendMessage(chatId, "If you want your data were deleted use '/deletedata' command");
+                        break;
+                case "/deletedata":
+                        deleteUserFromDatabase(update.getMessage());
                         break;
                 default: sendMessage(chatId, "Sorry, command was no recognized");
             }
@@ -79,7 +85,6 @@ public class TestBotService extends TelegramLongPollingBot {
 
     private void startCommandReceived(long chatId, String name){
         String answerParsed = EmojiParser.parseToUnicode("Hello, " + name + ", nice to meet you!" + " :blush:");
-        //String answer = "Hello, " + name + ", nice to meet you!" + " :blush:";
         log.info("Replied to user " + name);
         sendMessage(chatId, answerParsed);
     }
@@ -128,6 +133,27 @@ public class TestBotService extends TelegramLongPollingBot {
             execute(msg);
         } catch (TelegramApiException e) {
             log.error("Error occured " + e.getMessage());
+        }
+    }
+
+    private void checkUserInDatabase (Message message) {
+        var chatId = message.getChatId();
+
+        if (repository.findById(chatId).isEmpty()) {
+            sendMessage(chatId, "Your data is absent");
+        } else {
+            sendMessage(chatId, "Your data is saved \n" +
+                    repository.findById(chatId).get().toString());
+        }
+    }
+
+    private void deleteUserFromDatabase (Message message) {
+        var chatId = message.getChatId();
+        if (repository.findById(chatId).isEmpty()) {
+            sendMessage(chatId, "Your data is absent, nothing to delete");
+        } else {
+            repository.delete(repository.findById(chatId).get());
+            sendMessage(chatId, "Your data is deleted");
         }
     }
 }
