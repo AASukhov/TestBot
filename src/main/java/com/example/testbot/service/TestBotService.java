@@ -2,7 +2,7 @@ package com.example.testbot.service;
 
 import com.example.testbot.config.BotConfig;
 import com.example.testbot.model.User;
-import com.example.testbot.model.UserRepository;
+import com.example.testbot.repository.UserRepository;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,18 +113,18 @@ public class TestBotService extends TelegramLongPollingBot {
 
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> keyboardRows = new ArrayList<>();
-        KeyboardRow row = new KeyboardRow();
-        row.add("Weather");
-        row.add("Get random joke");
-        keyboardRows.add(row);
+        KeyboardRow firstRow = new KeyboardRow();
+        firstRow.add("Weather");
+        firstRow.add("Get random joke");
+        keyboardRows.add(firstRow);
 
-        row = new KeyboardRow();
+        KeyboardRow secondRow = new KeyboardRow();
 
-        row.add("register");
-        row.add("check my data");
-        row.add("delete my data");
+        secondRow.add("register");
+        secondRow.add("check my data");
+        secondRow.add("delete my data");
 
-        keyboardRows.add(row);
+        keyboardRows.add(secondRow);
         keyboardMarkup.setKeyboard(keyboardRows);
 
         msg.setReplyMarkup(keyboardMarkup);
