@@ -2,11 +2,12 @@ package com.example.testbot.service;
 
 import com.example.testbot.config.BotConfig;
 import com.example.testbot.model.User;
+import com.example.testbot.repository.JokeRepository;
 import com.example.testbot.repository.UserRepository;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -23,11 +24,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@Component
+@Service
 public class TestBotService extends TelegramLongPollingBot {
 
     @Autowired
-    private UserRepository repository;
+    private UserRepository userRepository;
+
+    @Autowired
+    private JokeRepository jokeRepository;
+
+    @Autowired
+    private JokeParser parser;
 
     final BotConfig config;
 
@@ -38,7 +45,7 @@ public class TestBotService extends TelegramLongPollingBot {
         listofCommands.add(new BotCommand("/mydata", "get your data stored"));
         listofCommands.add(new BotCommand("/deletedata", "delete my data"));
         listofCommands.add(new BotCommand("/help", "info how to use this bot"));
-        listofCommands.add(new BotCommand("/settings", "set your preferences"));
+        listofCommands.add(new BotCommand("/joke", "if you want to read some jokes"));
         try {
             this.execute(new SetMyCommands(listofCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
@@ -65,6 +72,7 @@ public class TestBotService extends TelegramLongPollingBot {
                 case "/start":
                         startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
                         registerUser(update.getMessage());
+                        jokeParsing();
                         break;
                 case "/help":
                         sendMessage(chatId, "This telegram bot is for demonstration \n " +
@@ -78,6 +86,9 @@ public class TestBotService extends TelegramLongPollingBot {
                 case "/deletedata":
                         deleteUserFromDatabase(update.getMessage());
                         break;
+                case "/joke":
+                        sendMessage(chatId, parser.jokeGiving());
+                        break;
                 default: sendMessage(chatId, "Sorry, command was no recognized");
             }
         }
@@ -90,10 +101,9 @@ public class TestBotService extends TelegramLongPollingBot {
     }
 
     private void registerUser(Message message) {
-        if(repository.findById(message.getChatId()).isEmpty()){
+        if(userRepository.findById(message.getChatId()).isEmpty()){
             var chatId = message.getChatId();
             var chat = message.getChat();
-
             User user = new User();
             user.setChatId(chatId);
             user.setFirstName(chat.getFirstName());
@@ -101,7 +111,7 @@ public class TestBotService extends TelegramLongPollingBot {
             user.setUserName(chat.getUserName());
             user.setRegisteredAt(new Timestamp(System.currentTimeMillis()));
 
-            repository.save(user);
+            userRepository.save(user);
             log.info("user saved: " + user);
         }
     }
@@ -139,21 +149,25 @@ public class TestBotService extends TelegramLongPollingBot {
     private void checkUserInDatabase (Message message) {
         var chatId = message.getChatId();
 
-        if (repository.findById(chatId).isEmpty()) {
+        if (userRepository.findById(chatId).isEmpty()) {
             sendMessage(chatId, "Your data is absent");
         } else {
             sendMessage(chatId, "Your data is saved \n" +
-                    repository.findById(chatId).get().toString());
+                    userRepository.findById(chatId).get().toString());
         }
     }
 
     private void deleteUserFromDatabase (Message message) {
         var chatId = message.getChatId();
-        if (repository.findById(chatId).isEmpty()) {
+        if (userRepository.findById(chatId).isEmpty()) {
             sendMessage(chatId, "Your data is absent, nothing to delete");
         } else {
-            repository.delete(repository.findById(chatId).get());
+            userRepository.delete(userRepository.findById(chatId).get());
             sendMessage(chatId, "Your data is deleted");
         }
+    }
+
+    private void jokeParsing () {
+        parser.jokeParsing(jokeRepository);
     }
 }

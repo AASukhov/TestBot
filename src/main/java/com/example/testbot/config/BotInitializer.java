@@ -1,5 +1,6 @@
 package com.example.testbot.config;
 
+import com.example.testbot.repository.JokeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
